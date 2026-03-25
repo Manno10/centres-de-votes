@@ -15,12 +15,13 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 :root{
-  --panel-w: 350px;
+  --panel-w: 370px;
   --panel-collapsed-w: 56px;
   --brand: #009FE3;
   --brand-dark: #1C3D5A;
   --ok: #198754;
   --warn: #b7791f;
+  --violet: #6d28d9;
   --gray-900: #111827;
   --gray-700: #374151;
   --gray-500: #6B7280;
@@ -270,7 +271,7 @@ body { overflow: hidden; }
 .btn-fit { background: #4b5563; }
 .btn-fit:hover { background: #374151; }
 
-.btn-print { background: #6d28d9; }
+.btn-print { background: var(--violet); }
 .btn-print:hover { background: #5b21b6; }
 
 .actions-box {
@@ -332,7 +333,7 @@ body { overflow: hidden; }
   left: calc(var(--panel-w) + 16px);
   bottom: 26px;
   z-index: 9000;
-  min-width: 175px;
+  min-width: 190px;
   background: white;
   border: 1px solid var(--gray-200);
   border-radius: 10px;
@@ -452,15 +453,20 @@ body { overflow: hidden; }
   display: none !important;
 }
 
-.print-mode .panel,
-.print-mode .leaflet-control-container,
-.print-mode .leaflet-top,
-.print-mode .leaflet-bottom {
-  display: none !important;
+.preview-box {
+  background:#fff;
+  border:1px solid #E5E7EB;
+  border-radius:8px;
+  padding:8px;
 }
 
-.print-mode .print-title {
-  display: block !important;
+.preview-img {
+  width:100%;
+  height:170px;
+  object-fit:cover;
+  border-radius:6px;
+  display:block;
+  background:#F3F4F6;
 }
 
 @media print {
@@ -470,33 +476,10 @@ body { overflow: hidden; }
   .leaflet-bottom {
     display: none !important;
   }
-
-  .print-title {
-    display: block !important;
-  }
-
-  .map-legend,
-  .north-arrow {
-    display: block !important;
-    box-shadow: none;
-    border: 1px solid #999;
-  }
-
-  body, html, #map {
-    width: 100%;
-    height: 100%;
-  }
 }
 
 @media (max-width: 768px) {
   :root { --panel-w: 292px; }
-
-  .north-arrow {
-    width: 48px;
-    height: 68px;
-    right: 12px;
-    top: 12px;
-  }
 }
 </style>
 </head>
@@ -566,6 +549,16 @@ body { overflow: hidden; }
         <option value="filtered_pdf">pdf des centres filtrés + carte</option>
       </select>
     </div>
+
+    <div class="filter-group">
+      <label class="filter-label">aperçu impression</label>
+      <div class="preview-box">
+        <img id="printPreviewImg" class="preview-img" alt="aperçu carte">
+        <div style="margin-top:6px;font-size:11px;color:#6B7280;">
+          aperçu de la vue actuelle de la carte
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="panel-footer">
@@ -590,24 +583,26 @@ body { overflow: hidden; }
         afficher les labels des centres
       </label>
 
+      <button class="btn-action secondary" id="toggleSectionsBtn">masquer / afficher sections</button>
       <button class="btn-action success" id="exportCsvBtn">csv filtrés</button>
       <button class="btn-action warning" id="exportVisibleCsvBtn">csv visibles écran</button>
       <button class="btn-action secondary" id="exportPdfBtn">pdf avec carte</button>
 
       <div class="info-note">
-        pour le pdf, le fond OpenStreetMap ou Carto light est le plus stable. certains fonds satellite peuvent limiter la capture selon le navigateur.
+        l’impression utilise la vue actuelle de la carte. le pdf capture aussi la vue courante.
       </div>
     </div>
   </div>
 </div>
 
 <div class="map-legend" id="mapLegend">
-  <div class="legend-title">Centres de vote</div>
+  <div class="legend-title">Légende</div>
   <div class="legend-row"><div class="legend-dot" style="background:#2E86C1;"></div> cluster</div>
   <div class="legend-row"><div class="legend-dot" style="background:#1C3D5A;"></div> centre individuel</div>
+  <div class="legend-row"><div style="width:14px;height:0;border-top:2px solid #1C3D5A;"></div> section communale</div>
 </div>
 
-<div class="north-arrow" id="northArrow">
+<div class="north-arrow">
   <div class="n">N</div>
   <div class="arrow"></div>
 </div>
@@ -617,18 +612,14 @@ body { overflow: hidden; }
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-
-<!-- charger les données -->
 <script src="data.js"></script>
 
 <script>
-// sécurité minimale
 if (!Array.isArray(pts)) {
   alert("Le fichier data.js n'a pas chargé correctement.");
   throw new Error("pts non défini depuis data.js");
 }
 
-// carte
 const map = L.map('map', { zoomControl: false }).setView([18.955420883333332, -72.83014525030582], 7);
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 
@@ -686,12 +677,10 @@ const cluster = L.markerClusterGroup({
 });
 map.addLayer(cluster);
 
-// ui
 const panel = document.getElementById("panel");
 const panelMini = document.getElementById("panelMini");
 const togglePanelBtn = document.getElementById("togglePanelBtn");
 const mapLegend = document.getElementById("mapLegend");
-const printTitle = document.getElementById("printTitle");
 const printSubtitle = document.getElementById("printSubtitle");
 
 const searchInput = document.getElementById("searchInput");
@@ -699,22 +688,23 @@ const depSelect = document.getElementById("depSelect");
 const comSelect = document.getElementById("comSelect");
 const secSelect = document.getElementById("secSelect");
 const exportModeSelect = document.getElementById("exportModeSelect");
-
 const comBadges = document.getElementById("comBadges");
 const countBox = document.getElementById("countBox");
 const resetBtn = document.getElementById("resetBtn");
 const fitBtn = document.getElementById("fitBtn");
 const printBtn = document.getElementById("printBtn");
 const toggleLabels = document.getElementById("toggleLabels");
-
+const toggleSectionsBtn = document.getElementById("toggleSectionsBtn");
 const runExportBtn = document.getElementById("runExportBtn");
 const exportCsvBtn = document.getElementById("exportCsvBtn");
 const exportVisibleCsvBtn = document.getElementById("exportVisibleCsvBtn");
 const exportPdfBtn = document.getElementById("exportPdfBtn");
+const printPreviewImg = document.getElementById("printPreviewImg");
 
 let forceLabels = false;
+let sectionsLayer = null;
+let sectionsVisible = true;
 
-// utilitaires
 function sel(v) {
   return v === "__ALL__" ? "" : v;
 }
@@ -886,7 +876,6 @@ function escapeCsv(value) {
   return `"${s}"`;
 }
 
-// panneau minimisable
 function updatePanelState() {
   const collapsed = panel.classList.contains("collapsed");
   togglePanelBtn.textContent = collapsed ? "⟩" : "⟨";
@@ -904,7 +893,6 @@ panelMini.addEventListener("click", () => {
   updatePanelState();
 });
 
-// affichage carte
 const LABEL_ZOOM = 14;
 const MAX_LABELS = 250;
 
@@ -969,7 +957,6 @@ function applyFilter(fitMap = true) {
   }
 }
 
-// export csv
 function downloadCsv(rows, baseName) {
   const csv = rows.map(r => r.map(v => escapeCsv(v)).join(",")).join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -1027,11 +1014,10 @@ function exportVisibleCsv() {
   downloadCsv(buildRowsForPoints(visible, "visibles_ecran"), "centres_visibles");
 }
 
-// capture carte pour pdf
 async function captureMapImage() {
   const mapEl = document.getElementById("map");
   document.body.classList.add("capture-mode");
-  await new Promise(r => setTimeout(r, 500));
+  await new Promise(r => setTimeout(r, 700));
 
   try {
     const canvas = await html2canvas(mapEl, {
@@ -1039,15 +1025,23 @@ async function captureMapImage() {
       allowTaint: false,
       logging: false,
       backgroundColor: "#ffffff",
-      scale: 1.5
+      scale: 2
     });
-    return canvas.toDataURL("image/jpeg", 0.92);
+    return canvas.toDataURL("image/jpeg", 0.95);
   } finally {
     document.body.classList.remove("capture-mode");
   }
 }
 
-// export pdf
+async function updatePrintPreview() {
+  try {
+    const imgData = await captureMapImage();
+    printPreviewImg.src = imgData;
+  } catch (e) {
+    console.error("aperçu impression impossible :", e);
+  }
+}
+
 async function exportFilteredPdf() {
   const filtered = currentFilteredPoints();
   if (!filtered.length) {
@@ -1085,7 +1079,6 @@ async function exportFilteredPdf() {
     doc.text(`centre carte : ${ms.centerLat}, ${ms.centerLon}`, 14, 71);
 
     let imgAdded = false;
-
     try {
       const imgData = await captureMapImage();
       doc.setFont("helvetica", "bold");
@@ -1146,17 +1139,143 @@ async function exportFilteredPdf() {
   }
 }
 
-// impression
-function printMap() {
+async function printMap() {
   updatePrintSubtitle();
-  document.body.classList.add("print-mode");
-  setTimeout(() => {
-    window.print();
-    setTimeout(() => document.body.classList.remove("print-mode"), 800);
-  }, 250);
+
+  try {
+    const imgData = await captureMapImage();
+
+    const w = window.open("", "_blank");
+    if (!w) {
+      alert("impossible d'ouvrir la fenêtre d'impression.");
+      return;
+    }
+
+    w.document.write(`
+      <!doctype html>
+      <html lang="fr">
+      <head>
+        <meta charset="utf-8">
+        <title>impression carte</title>
+        <style>
+          html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: Arial, sans-serif;
+            background: white;
+          }
+          .page {
+            position: relative;
+            width: 100%;
+            height: 100%;
+          }
+          .title {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.95);
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 8px 14px;
+            text-align: center;
+            z-index: 10;
+            min-width: 320px;
+          }
+          .title .big {
+            font-size: 18px;
+            font-weight: 700;
+          }
+          .title .small {
+            font-size: 11px;
+            color: #666;
+            margin-top: 2px;
+          }
+          .mapimg {
+            width: 100%;
+            height: 100vh;
+            object-fit: contain;
+            display: block;
+          }
+          .legend {
+            position: absolute;
+            left: 20px;
+            bottom: 20px;
+            background: rgba(255,255,255,0.95);
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 12px;
+          }
+          .north {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 54px;
+            height: 72px;
+            background: rgba(255,255,255,0.95);
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            text-align: center;
+            padding-top: 6px;
+          }
+          .north .n {
+            font-weight: 700;
+            margin-bottom: 4px;
+          }
+          .north .arrow {
+            width: 0;
+            height: 0;
+            margin: 0 auto;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 28px solid #111;
+          }
+          @media print {
+            @page { size: landscape; margin: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="page">
+          <div class="title">
+            <div class="big">carte des centres de vote</div>
+            <div class="small">${printSubtitle.textContent}</div>
+          </div>
+
+          <img class="mapimg" src="${imgData}">
+
+          <div class="legend">
+            <div style="font-weight:700;margin-bottom:6px;">légende</div>
+            <div>● centres de vote</div>
+            <div>— sections communales</div>
+          </div>
+
+          <div class="north">
+            <div class="n">N</div>
+            <div class="arrow"></div>
+          </div>
+        </div>
+
+        <script>
+          window.onload = function() {
+            window.print();
+            window.onafterprint = function() { window.close(); };
+          };
+        <\/script>
+      </body>
+      </html>
+    `);
+
+    w.document.close();
+  } catch (e) {
+    console.error(e);
+    alert("erreur lors de la préparation de l'impression.");
+  }
 }
 
-// actions
 function fitCurrentFiltered() {
   const filtered = currentFilteredPoints();
   if (!filtered.length) {
@@ -1187,7 +1306,51 @@ function resetAll() {
   applyFilter(true);
 }
 
-// initialisation
+async function loadSectionsLayer() {
+  try {
+    const res = await fetch("sections_communales.geojson");
+    const geojson = await res.json();
+
+    sectionsLayer = L.geoJSON(geojson, {
+      style: function() {
+        return {
+          color: "#1C3D5A",
+          weight: 1,
+          opacity: 0.8,
+          fill: false
+        };
+      },
+      onEachFeature: function(feature, layer) {
+        const nom =
+          feature.properties?.section ||
+          feature.properties?.nom ||
+          feature.properties?.name ||
+          "section communale";
+
+        layer.bindTooltip(nom, {
+          permanent: false,
+          direction: "center",
+          className: "lbl"
+        });
+      }
+    }).addTo(map);
+  } catch (e) {
+    console.error("erreur chargement sections :", e);
+  }
+}
+
+toggleSectionsBtn.addEventListener("click", () => {
+  if (!sectionsLayer) return;
+
+  if (sectionsVisible) {
+    map.removeLayer(sectionsLayer);
+    sectionsVisible = false;
+  } else {
+    map.addLayer(sectionsLayer);
+    sectionsVisible = true;
+  }
+});
+
 setOptions(depSelect, uniqSorted(pts.map(p => p.dep)), "Tous les départements");
 setComOptions(possibleCommunes(""));
 setOptions(secSelect, possibleSections("", []), "Toutes les sections");
@@ -1225,12 +1388,21 @@ exportCsvBtn.addEventListener("click", exportFilteredCsv);
 exportVisibleCsvBtn.addEventListener("click", exportVisibleCsv);
 exportPdfBtn.addEventListener("click", exportFilteredPdf);
 
+map.on("moveend", () => {
+  updatePrintPreview();
+});
+
 map.on("zoomend", () => {
   if (!forceLabels) applyFilter(false);
+  updatePrintPreview();
 });
 
 updatePanelState();
 applyFilter(true);
+loadSectionsLayer();
+setTimeout(() => {
+  updatePrintPreview();
+}, 1200);
 </script>
 </body>
 </html>
