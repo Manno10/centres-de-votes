@@ -17,140 +17,108 @@ html, body { height: 100%; margin: 0; font-family: Arial, sans-serif; }
   position: fixed;
   top: 0;
   left: 0;
-  width: 340px;
+  width: 330px;
   height: 100vh;
-  background: #fff;
+  background: white;
   z-index: 9999;
-  box-shadow: 0 0 15px rgba(0,0,0,.15);
+  box-shadow: 0 0 15px rgba(0,0,0,.2);
   overflow-y: auto;
 }
 
 .header{
   background: #009fe3;
   color: white;
-  padding: 14px 16px;
-  font-weight: bold;
-  font-size: 20px;
-}
-
-.sub{
-  font-size: 12px;
-  font-weight: normal;
-  margin-top: 4px;
-}
-
-.body{
   padding: 14px;
+  font-weight: bold;
 }
+
+.body{ padding: 12px; }
 
 label{
-  display: block;
   font-size: 11px;
   font-weight: bold;
-  color: #666;
-  margin: 12px 0 5px;
-  text-transform: uppercase;
+  display: block;
+  margin-top: 10px;
 }
 
-input, select, button{
+input, select{
   width: 100%;
-  padding: 9px 10px;
+  padding: 8px;
+  margin-top: 4px;
   border-radius: 6px;
   border: 1px solid #ccc;
-  box-sizing: border-box;
 }
 
-#comSelect{
-  height: 110px;
-}
+#comSelect{ height: 100px; }
 
 button{
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
   border: none;
+  border-radius: 6px;
   color: white;
   font-weight: bold;
   cursor: pointer;
-  margin-top: 8px;
 }
 
-.btn-blue{ background:#009fe3; }
-.btn-dark{ background:#1c3d5a; }
-.btn-green{ background:#198754; }
-.btn-orange{ background:#b7791f; }
-.btn-violet{ background:#6d28d9; }
+.blue{ background:#009fe3; }
+.dark{ background:#1c3d5a; }
+.green{ background:#198754; }
+.orange{ background:#b7791f; }
+.violet{ background:#6d28d9; }
 
 .preview-box{
   margin-top: 8px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 8px;
-  background: #fff;
+  border:1px solid #ddd;
+  border-radius:8px;
+  padding:6px;
 }
 
 .preview-box img{
-  width: 100%;
-  height: 170px;
-  object-fit: cover;
-  border-radius: 6px;
-  background: #f3f4f6;
-}
-
-.stat{
-  margin: 10px 0;
-  font-size: 14px;
-  font-weight: bold;
-  color: #1c3d5a;
+  width:100%;
+  height:160px;
+  object-fit:cover;
 }
 
 .map-legend{
   position: fixed;
   bottom: 20px;
-  left: 355px;
-  z-index: 9000;
+  left: 350px;
   background: white;
-  padding: 10px 12px;
+  padding: 10px;
   border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0,0,0,.15);
+  box-shadow: 0 0 10px rgba(0,0,0,.2);
   font-size: 12px;
 }
 
 .north{
   position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 9000;
+  top: 15px;
+  right: 15px;
   background: white;
-  border-radius: 8px;
   padding: 8px;
+  border-radius: 8px;
   text-align: center;
-  box-shadow: 0 0 10px rgba(0,0,0,.15);
-  width: 52px;
 }
 
 .north .arrow{
-  width: 0;
-  height: 0;
-  margin: 4px auto 0;
-  border-left: 10px solid transparent;
-  border-right: 10px solid transparent;
-  border-bottom: 28px solid black;
+  width:0;height:0;
+  margin:4px auto 0;
+  border-left:10px solid transparent;
+  border-right:10px solid transparent;
+  border-bottom:28px solid black;
 }
 
-.leaflet-tooltip.lbl{
-  background: rgba(255,255,255,.95);
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 3px 6px;
-  font-size: 11px;
-  font-weight: bold;
+/* correction menu fond de carte */
+.leaflet-control-layers{
+  font-size:12px;
+  box-shadow:0 2px 10px rgba(0,0,0,.2);
 }
 
-@media print{
-  .panel,
-  .leaflet-control-container,
-  .map-legend,
-  .north{
-    display:none !important;
-  }
+.leaflet-bottom.leaflet-right .leaflet-control-layers{
+  margin-bottom:80px;
+  margin-right:15px;
 }
 </style>
 </head>
@@ -159,52 +127,47 @@ button{
 <div id="map"></div>
 
 <div class="panel">
-  <div class="header">
-    centres de vote
-    <div class="sub">visualisation, filtres et impression</div>
-  </div>
+  <div class="header">Centres de vote</div>
 
   <div class="body">
-    <label>recherche centre</label>
-    <input type="text" id="searchInput" placeholder="nom du centre...">
+    <label>Recherche</label>
+    <input id="search">
 
-    <label>département</label>
-    <select id="depSelect">
-      <option value="__ALL__">tous les départements</option>
-    </select>
+    <label>Département</label>
+    <select id="dep"></select>
 
-    <label>commune(s)</label>
-    <select id="comSelect" multiple></select>
+    <label>Commune</label>
+    <select id="com" multiple></select>
 
-    <label>section communale</label>
-    <select id="secSelect">
-      <option value="__ALL__">toutes les sections</option>
-    </select>
+    <label>Section</label>
+    <select id="sec"></select>
 
-    <div class="stat"><span id="countBox">0</span> centres affichés</div>
+    <div style="margin-top:10px;font-weight:bold">
+      <span id="count">0</span> centres
+    </div>
 
-    <button class="btn-dark" id="resetBtn">réinitialiser</button>
-    <button class="btn-blue" id="fitBtn">ajuster carte</button>
-    <button class="btn-dark" id="toggleSectionsBtn">masquer / afficher sections</button>
-    <button class="btn-green" id="toggleLabelsBtn">afficher / masquer labels</button>
-    <button class="btn-violet" id="printBtn">imprimer la vue actuelle</button>
-    <button class="btn-blue" id="exportCsvBtn">export csv filtré</button>
+    <button class="dark" id="reset">reset</button>
+    <button class="blue" id="fit">ajuster</button>
+    <button class="dark" id="sections">sections ON/OFF</button>
+    <button class="green" id="labels">labels ON/OFF</button>
+    <button class="violet" id="print">imprimer</button>
+    <button class="blue" id="csv">export csv</button>
 
-    <label>aperçu impression</label>
+    <label>Aperçu</label>
     <div class="preview-box">
-      <img id="printPreviewImg" alt="aperçu carte">
+      <img id="preview">
     </div>
   </div>
 </div>
 
 <div class="map-legend">
-  <b>légende</b><br>
-  ● centres de vote<br>
-  — sections communales
+  <b>Légende</b><br>
+  ● centres<br>
+  — sections
 </div>
 
 <div class="north">
-  <b>N</b>
+  N
   <div class="arrow"></div>
 </div>
 
@@ -214,323 +177,136 @@ button{
 <script src="data.js"></script>
 
 <script>
-if (!Array.isArray(pts)) {
-  alert("data.js ne s'est pas chargé correctement.");
-  throw new Error("pts non chargé");
-}
+const map = L.map("map").setView([18.95,-72.83],7);
 
-const map = L.map("map").setView([18.95, -72.83], 7);
-
-const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  maxZoom: 19,
-  attribution: "&copy; OpenStreetMap"
-}).addTo(map);
-
-const carto = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-  maxZoom: 20,
-  attribution: "&copy; Carto"
-});
-
-const esri = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-  maxZoom: 19,
-  attribution: "Esri"
-});
+const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+const carto = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png");
+const esri = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}");
 
 L.control.layers(
-  { "OpenStreetMap": osm, "Carto light": carto, "Satellite": esri },
+  {"OSM":osm,"Carto":carto,"Satellite":esri},
   {},
-  { position: "topright" }
+  {position:"bottomright",collapsed:false}
 ).addTo(map);
 
-L.control.scale({ metric: true, imperial: false }).addTo(map);
-
-const cluster = L.markerClusterGroup({
-  chunkedLoading: true,
-  chunkDelay: 50,
-  chunkInterval: 200,
-  disableClusteringAtZoom: 16
-});
+const cluster = L.markerClusterGroup({chunkedLoading:true});
 map.addLayer(cluster);
 
-const depSelect = document.getElementById("depSelect");
-const comSelect = document.getElementById("comSelect");
-const secSelect = document.getElementById("secSelect");
-const searchInput = document.getElementById("searchInput");
-const countBox = document.getElementById("countBox");
-const resetBtn = document.getElementById("resetBtn");
-const fitBtn = document.getElementById("fitBtn");
-const toggleSectionsBtn = document.getElementById("toggleSectionsBtn");
-const toggleLabelsBtn = document.getElementById("toggleLabelsBtn");
-const printBtn = document.getElementById("printBtn");
-const exportCsvBtn = document.getElementById("exportCsvBtn");
-const printPreviewImg = document.getElementById("printPreviewImg");
+let sectionsLayer=null;
+let sectionsOn=true;
+let labelsOn=false;
 
-let sectionsLayer = null;
-let sectionsVisible = true;
-let forceLabels = false;
+function uniq(a){return [...new Set(a)];}
 
-function uniq(arr){
-  return [...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr',{sensitivity:'base'}));
+const dep=document.getElementById("dep");
+const com=document.getElementById("com");
+const sec=document.getElementById("sec");
+const search=document.getElementById("search");
+const count=document.getElementById("count");
+const preview=document.getElementById("preview");
+
+function fill(){
+  dep.innerHTML='<option value="">tous</option>';
+  uniq(pts.map(p=>p.dep)).forEach(v=>dep.innerHTML+=`<option>${v}</option>`);
 }
 
-function norm(v){
-  return String(v || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
-}
-
-function selectedCommunes(){
-  return Array.from(comSelect.selectedOptions).map(o => o.value);
-}
-
-function fillSelect(select, values, allText){
-  select.innerHTML = "";
-  if (allText){
-    const o = document.createElement("option");
-    o.value = "__ALL__";
-    o.textContent = allText;
-    select.appendChild(o);
-  }
-  values.forEach(v => {
-    const o = document.createElement("option");
-    o.value = v;
-    o.textContent = v;
-    select.appendChild(o);
-  });
-}
-
-function getFilteredPoints(){
-  const dep = depSelect.value === "__ALL__" ? "" : depSelect.value;
-  const sec = secSelect.value === "__ALL__" ? "" : secSelect.value;
-  const coms = selectedCommunes();
-  const q = norm(searchInput.value);
-
-  return pts.filter(p => {
-    if (dep && p.dep !== dep) return false;
-    if (coms.length && !coms.includes(p.com)) return false;
-    if (sec && p.sec !== sec) return false;
-    if (q){
-      const txt = norm([p.tip, p.dep, p.com, p.sec, p.popup].join(" "));
-      if (!txt.includes(q)) return false;
-    }
-    return true;
-  });
-}
-
-function refreshFilters(){
-  const dep = depSelect.value === "__ALL__" ? "" : depSelect.value;
-  const currentComs = selectedCommunes();
-
-  const coms = dep ? uniq(pts.filter(p => p.dep === dep).map(p => p.com)) : uniq(pts.map(p => p.com));
-  fillSelect(comSelect, coms);
-
-  Array.from(comSelect.options).forEach(o => {
-    if (currentComs.includes(o.value)) o.selected = true;
-  });
-
-  const secCandidates = pts.filter(p => {
-    if (dep && p.dep !== dep) return false;
-    if (selectedCommunes().length && !selectedCommunes().includes(p.com)) return false;
-    return true;
-  }).map(p => p.sec);
-
-  fillSelect(secSelect, uniq(secCandidates), "toutes les sections");
-}
-
-function drawPoints(fit=true){
-  const data = getFilteredPoints();
+function filter(){
   cluster.clearLayers();
 
-  const bounds = [];
+  let data=pts.filter(p=>{
+    if(dep.value && p.dep!==dep.value)return false;
+    if(sec.value && p.sec!==sec.value)return false;
+    if(search.value && !p.tip.toLowerCase().includes(search.value.toLowerCase()))return false;
+    return true;
+  });
 
-  data.forEach(p => {
-    const marker = L.marker([p.lat, p.lon]).bindPopup(p.popup || p.tip);
+  count.innerText=data.length;
 
-    if (forceLabels) {
-      marker.bindTooltip(p.tip, {
-        permanent: true,
-        direction: "top",
-        className: "lbl"
-      });
+  let bounds=[];
+
+  data.forEach(p=>{
+    let m=L.marker([p.lat,p.lon]).bindPopup(p.popup);
+
+    if(labelsOn){
+      m.bindTooltip(p.tip,{permanent:true});
     }
 
-    cluster.addLayer(marker);
-    bounds.push([p.lat, p.lon]);
+    cluster.addLayer(m);
+    bounds.push([p.lat,p.lon]);
   });
 
-  countBox.textContent = data.length;
-
-  if (fit && bounds.length) {
-    map.fitBounds(bounds, {padding:[30,30]});
-  }
+  if(bounds.length)map.fitBounds(bounds);
 }
 
-async function loadSectionsLayer(){
-  try{
-    const res = await fetch("sections_communales.geojson");
-    const gj = await res.json();
-
-    sectionsLayer = L.geoJSON(gj, {
-      style: {
-        color: "#1C3D5A",
-        weight: 1,
-        opacity: 0.85,
-        fill: false
-      },
-      onEachFeature: function(feature, layer){
-        const nom =
-          feature.properties?.section ||
-          feature.properties?.nom ||
-          feature.properties?.name ||
-          "section communale";
-        layer.bindTooltip(nom);
-      }
-    }).addTo(map);
-  } catch(e){
-    console.error("erreur sections communales", e);
-  }
-}
-
-async function updatePreview(){
-  try{
-    const canvas = await html2canvas(document.getElementById("map"), {
-      useCORS: true,
-      allowTaint: false,
-      scale: 1
-    });
-    printPreviewImg.src = canvas.toDataURL("image/jpeg", 0.9);
-  } catch(e){
-    console.error("aperçu impossible", e);
-  }
-}
-
-function exportCsv(){
-  const rows = [["departement","commune","section","nom_centre","latitude","longitude"]];
-  getFilteredPoints().forEach(p => {
-    rows.push([p.dep, p.com, p.sec, p.tip, p.lat, p.lon]);
-  });
-
-  const csv = rows.map(r =>
-    r.map(v => `"${String(v ?? "").replace(/"/g,'""')}"`).join(",")
-  ).join("\n");
-
-  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "centres_filtres.csv";
-  a.click();
-  URL.revokeObjectURL(url);
+async function previewUpdate(){
+  const canvas=await html2canvas(document.getElementById("map"));
+  preview.src=canvas.toDataURL();
 }
 
 async function printMap(){
-  try{
-    const canvas = await html2canvas(document.getElementById("map"), {
-      useCORS: true,
-      allowTaint: false,
-      scale: 2
-    });
+  const canvas=await html2canvas(document.getElementById("map"),{scale:2});
+  const img=canvas.toDataURL();
 
-    const img = canvas.toDataURL("image/jpeg", 0.95);
-
-    const w = window.open("", "_blank");
-    w.document.write(`
-      <html>
-      <head>
-        <title>impression carte</title>
-        <style>
-          html,body{margin:0;padding:0;height:100%;font-family:Arial,sans-serif;}
-          .title{
-            position:absolute;top:12px;left:50%;transform:translateX(-50%);
-            background:rgba(255,255,255,.95);padding:8px 14px;border:1px solid #ccc;border-radius:8px;
-            font-weight:bold;
-          }
-          .mapimg{width:100%;height:100vh;object-fit:contain;}
-          .legend{
-            position:absolute;left:20px;bottom:20px;
-            background:rgba(255,255,255,.95);padding:10px 12px;border:1px solid #ccc;border-radius:8px;
-          }
-          .north{
-            position:absolute;top:20px;right:20px;background:rgba(255,255,255,.95);
-            padding:8px;border:1px solid #ccc;border-radius:8px;text-align:center;width:52px;
-          }
-          .north .arrow{
-            width:0;height:0;margin:4px auto 0;
-            border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:28px solid black;
-          }
-          @page{size:landscape;margin:0;}
-        </style>
-      </head>
-      <body>
-        <div class="title">carte des centres de vote</div>
-        <img class="mapimg" src="${img}">
-        <div class="legend"><b>légende</b><br>● centres de vote<br>— sections communales</div>
-        <div class="north"><b>N</b><div class="arrow"></div></div>
-        <script>
-          window.onload = function(){ window.print(); window.onafterprint = function(){ window.close(); }; };
-        <\/script>
-      </body>
-      </html>
-    `);
-    w.document.close();
-  } catch(e){
-    console.error("erreur impression", e);
-  }
+  const w=window.open();
+  w.document.write(`<img src="${img}" style="width:100%">`);
+  w.print();
 }
 
-resetBtn.addEventListener("click", () => {
-  searchInput.value = "";
-  depSelect.value = "__ALL__";
-  refreshFilters();
-  secSelect.value = "__ALL__";
-  drawPoints(true);
-});
+async function loadSections(){
+  const res=await fetch("sections_communales.geojson");
+  const gj=await res.json();
 
-fitBtn.addEventListener("click", () => drawPoints(true));
+  sectionsLayer=L.geoJSON(gj,{
+    style:{color:"#1c3d5a",weight:1}
+  }).addTo(map);
+}
 
-toggleSectionsBtn.addEventListener("click", () => {
-  if (!sectionsLayer) return;
-  if (sectionsVisible) {
-    map.removeLayer(sectionsLayer);
-    sectionsVisible = false;
-  } else {
-    map.addLayer(sectionsLayer);
-    sectionsVisible = true;
-  }
-});
+document.getElementById("reset").onclick=()=>{
+  search.value="";
+  dep.value="";
+  sec.value="";
+  filter();
+};
 
-toggleLabelsBtn.addEventListener("click", () => {
-  forceLabels = !forceLabels;
-  drawPoints(false);
-});
+document.getElementById("fit").onclick=filter;
 
-printBtn.addEventListener("click", printMap);
-exportCsvBtn.addEventListener("click", exportCsv);
+document.getElementById("labels").onclick=()=>{
+  labelsOn=!labelsOn;
+  filter();
+};
 
-searchInput.addEventListener("input", () => drawPoints(true));
+document.getElementById("sections").onclick=()=>{
+  if(!sectionsLayer)return;
+  if(sectionsOn){map.removeLayer(sectionsLayer);}
+  else{map.addLayer(sectionsLayer);}
+  sectionsOn=!sectionsOn;
+};
 
-depSelect.addEventListener("change", () => {
-  refreshFilters();
-  drawPoints(true);
-});
+document.getElementById("print").onclick=printMap;
 
-comSelect.addEventListener("change", () => {
-  refreshFilters();
-  drawPoints(true);
-});
+document.getElementById("csv").onclick=()=>{
+  let rows="dep,com,sec,nom,lat,lon\n";
+  pts.forEach(p=>{
+    rows+=`${p.dep},${p.com},${p.sec},${p.tip},${p.lat},${p.lon}\n`;
+  });
+  const blob=new Blob([rows]);
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="centres.csv";
+  a.click();
+};
 
-secSelect.addEventListener("change", () => drawPoints(true));
+search.oninput=filter;
+dep.onchange=filter;
+sec.onchange=filter;
 
-map.on("moveend", updatePreview);
-map.on("zoomend", updatePreview);
+map.on("moveend",previewUpdate);
+map.on("zoomend",previewUpdate);
 
-fillSelect(depSelect, uniq(pts.map(p => p.dep)), "tous les départements");
-refreshFilters();
-drawPoints(true);
-loadSectionsLayer();
-setTimeout(updatePreview, 1200);
+fill();
+filter();
+loadSections();
+setTimeout(previewUpdate,1000);
 </script>
 </body>
 </html>
