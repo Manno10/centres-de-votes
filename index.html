@@ -379,16 +379,31 @@ var secBtn = document.getElementById('btnSections');
 
 function buildSecLayer() {
   if (secLayer) { map.removeLayer(secLayer); secLayer = null; }
-  var dep = gv(depEl).toUpperCase(), coms = selComs().map(function(c){return c.toUpperCase();});
+  var dep = gv(depEl), coms = selComs();
+
   secLayer = L.geoJSON(secData, {
     filter: function(f) {
+      // Si aucun filtre actif, tout afficher
       if (!dep && !coms.length) return true;
-      var fd = (f.properties.dep||'').toUpperCase(), fc = (f.properties.com||'').toUpperCase();
-      return coms.length ? coms.indexOf(fc)>=0 : fd===dep;
+
+      var fd = (f.properties.dep || f.properties.departement || '').toUpperCase().trim();
+      var fc = (f.properties.com || f.properties.commune || '').toUpperCase().trim();
+      var selDep = dep.toUpperCase().trim();
+      var selComs = coms.map(function(c) { return c.toUpperCase().trim(); });
+
+      if (selComs.length) {
+        // Filtre par commune(s) : on cherche une correspondance partielle
+        return selComs.some(function(sc) {
+          return fc === sc || fc.indexOf(sc) >= 0 || sc.indexOf(fc) >= 0;
+        });
+      } else {
+        // Filtre par département uniquement
+        return fd === selDep || fd.indexOf(selDep) >= 0 || selDep.indexOf(fd) >= 0;
+      }
     },
     style: { color:'#1C3D5A', weight:1.4, opacity:.85, fillColor:'#AED6F1', fillOpacity:.32 },
     onEachFeature: function(f, l) {
-      l.bindTooltip((f.properties.nom||'Section')+(f.properties.com?'<br>'+f.properties.com:''), { sticky:true, className:'stt' });
+      l.bindTooltip((f.properties.nom||'Section')+(f.properties.com||f.properties.commune?'<br>'+(f.properties.com||f.properties.commune):''), { sticky:true, className:'stt' });
       l.on({
         mouseover: function(e) { e.target.setStyle({ fillColor:'#009FE3', fillOpacity:.5, weight:2 }); },
         mouseout:  function(e) { if (secLayer) secLayer.resetStyle(e.target); }
